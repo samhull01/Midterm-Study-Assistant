@@ -11805,12 +11805,21 @@ const MIDTERM_QUESTION_BANK = [
   function flaggedCard(q){const topicTag=q.studyItemId==null?'No matching study topic':`Study item ${q.studyItemId}`;return `<article class="review-item"><div class="category-top"><div><span class="question-code">${esc(q.code||q.category)}</span><h3>${esc(q.question)}</h3></div><button class="btn secondary small unflag-study" data-id="${q.id}" type="button">★ Unflag</button></div><p><strong>Answer: ${esc(q.correctAnswer)}.</strong> ${esc(q.choices[q.correctIndex].text)}</p><p>${esc(studyFeedback(q))}</p><div class="tags"><span class="tag">${esc(q.category)}</span><span class="tag">${esc(topicTag)}</span></div></article>`;}
 
   function statFor(cat){return state.stats[cat] || {attempted:0,correct:0};}
+  async function clearPerformanceHistory(){
+    const ok=await askConfirmation({title:'Clear performance history?',message:'This will permanently erase all category scores and per-question answer history, including the saved missed-question priority list. Flags, your theme, and any saved exam will not be removed.',confirmLabel:'Clear history',danger:true});
+    if(!ok)return;
+    state.stats={};
+    state.questionStats={};
+    saveState();
+    renderPerformance();
+  }
   function renderPerformance(){
     const totals=categories.reduce((a,c)=>{const s=statFor(c);a.attempted+=s.attempted;a.correct+=s.correct;return a;},{attempted:0,correct:0});
     const pct=totals.attempted?Math.round(totals.correct/totals.attempted*100):0;
-    $('#studyContent').innerHTML=`<div class="card"><div class="section-head"><div><h2>Performance by Category</h2><p>Results update after checked quiz answers and submitted test exams.</p></div><span class="pill">${categories.length} categories</span></div>
+    $('#studyContent').innerHTML=`<div class="card"><div class="section-head"><div><h2>Performance by Category</h2><p>Results update after checked quiz answers and submitted test exams.</p></div><div class="start-actions" style="margin-top:0"><span class="pill">${categories.length} categories</span><button id="clearPerformance" class="btn danger small" type="button">Clear Performance History</button></div></div>
       <div class="overview"><div class="donut" style="--score:${pct}%"><strong>${pct}%</strong></div><div class="overview-stats"><div class="stat"><strong>${totals.attempted}</strong><span>Answered</span></div><div class="stat"><strong>${totals.correct}</strong><span>Correct</span></div><div class="stat"><strong>${state.flags.length}</strong><span>Flagged</span></div></div></div>
       <div class="performance-grid">${categories.map(c=>{const s=statFor(c),p=s.attempted?Math.round(s.correct/s.attempted*100):0,n=MIDTERM_QUESTION_BANK.filter(q=>q.category===c).length;return `<article class="category-card"><div class="category-top"><h3>${esc(c)}</h3><strong>${p}%</strong></div><div class="bar"><span style="width:${p}%"></span></div><div class="category-meta"><span>${s.correct}/${s.attempted} correct · ${n} available</span><button class="btn small category-quiz" data-category="${esc(c)}" type="button">Quiz section</button></div></article>`;}).join('')}</div></div>`;
+    $('#clearPerformance').addEventListener('click',clearPerformanceHistory);
     $$('.category-quiz').forEach(b=>b.addEventListener('click',()=>startQuiz(b.dataset.category)));
   }
 
